@@ -42,7 +42,16 @@ class MoveItInterfaceNode:
             trajectory_goal = moveit_msgs.msg.ExecuteTrajectoryGoal
             trajectory_goal.trajectory = plan
             self.arm_client.send_goal(trajectory_goal)
-            self.arm_client.wait_for_result()
+            self.arm_client.wait_for_result(rospy.Duration(20))
+            rospy.loginfo("Finished movement")
+        elif goal.action == "home":
+            rospy.loginfo("Moving to home")
+            self.arm_group.set_named_target("home")
+            plan = self.arm_group.plan()
+            trajectory_goal = moveit_msgs.msg.ExecuteTrajectoryGoal
+            trajectory_goal.trajectory = plan
+            self.arm_client.send_goal(trajectory_goal)
+            self.arm_client.wait_for_result(rospy.Duration(20))
             rospy.loginfo("Finished movement")
         self.action_server.set_succeeded()
 
