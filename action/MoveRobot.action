@@ -1,0 +1,8 @@
+string action
+trajectory_msgs/JointTrajectoryPoint joint_goal
+geometry_msgs/Pose cartesian_goal
+float64 velocity
+---
+bool success
+---
+float32 ping
