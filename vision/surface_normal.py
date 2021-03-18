@@ -5,13 +5,13 @@ from PIL import Image as pimg
 import imutils
 from aruco import Calibration
 from scipy.spatial.transform import Rotation
-from vision.box_detector import BoxDetector
+#from vision.box_detector import BoxDetector
 
 
 class SurfaceNormals:
     def __init__(self):
         self.aruco = Calibration()
-        self.box_detector = BoxDetector()
+        #self.box_detector = BoxDetector()
         self.box_height = 160
 
     def find_point_in_mask(self, centre_x, centre_y, mask_contours, point_number):
