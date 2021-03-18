@@ -160,6 +160,8 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   nodes/moveit_test.py
+  nodes/moveit_interface_node.py
+  nodes/moveit_interface_node_test.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
