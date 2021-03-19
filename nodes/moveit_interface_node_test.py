@@ -17,7 +17,7 @@ class MoveItInterfaceTestNode:
         self.interface_client = actionlib.SimpleActionClient("bin_picking_moveit_interface", MoveRobotAction)
         self.interface_client.wait_for_server()
         rospy.loginfo("Node started")
-
+        
     def run(self):
         # goal = MoveRobotGoal()
         # goal.action = "joint"

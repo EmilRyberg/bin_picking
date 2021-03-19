@@ -8,6 +8,7 @@ import moveit_msgs.msg
 import actionlib
 import geometry_msgs
 from bin_picking.msg import MoveRobotAction, MoveRobotActionGoal
+from ur_e_webots.msg import GripperAction, GripperGoal
 
 
 class MoveItInterfaceNode:
@@ -18,6 +19,8 @@ class MoveItInterfaceNode:
         self.arm_client = actionlib.SimpleActionClient("execute_trajectory", moveit_msgs.msg.ExecuteTrajectoryAction)
         self.arm_client.wait_for_server()
         self.action_server = actionlib.SimpleActionServer("bin_picking_moveit_interface", MoveRobotAction, self.run_server, False)
+        self.gripper_client = actionlib.SimpleActionClient("gripper_server", GripperAction)
+        self.gripper_client.wait_for_server()
         rospy.loginfo("Starting action server")
         self.action_server.start()
 
@@ -53,6 +56,34 @@ class MoveItInterfaceNode:
             self.arm_client.send_goal(trajectory_goal)
             self.arm_client.wait_for_result(rospy.Duration(20))
             rospy.loginfo("Finished movement")
+        elif goal.action == "close_gripper":
+            width = goal.gripper_width
+            speed = goal.gripper_speed
+            should_lock = goal.gripper_lock
+            should_grip_box = goal.gripper_grip_box
+            gripper_goal = GripperGoal()
+            gripper_goal.action = "close"
+            gripper_goal.width = width
+            gripper_goal.speed = speed
+            gripper_goal.lock = should_lock
+            gripper_goal.grip_box = should_grip_box
+            self.gripper_client.send_goal(gripper_goal)
+            self.gripper_client.wait_for_result()
+        elif goal.action == "open_gripper":
+            gripper_goal = GripperGoal()
+            gripper_goal.action = "open"
+            self.gripper_client.send_goal(gripper_goal)
+            self.gripper_client.wait_for_result()
+        elif goal.action == "suction_on":
+            gripper_goal = GripperGoal()
+            gripper_goal.action = "suction_on"
+            self.gripper_client.send_goal(gripper_goal)
+            self.gripper_client.wait_for_result()
+        elif goal.action == "suction_off":
+            gripper_goal = GripperGoal()
+            gripper_goal.action = "suction_off"
+            self.gripper_client.send_goal(gripper_goal)
+            self.gripper_client.wait_for_result()
         self.action_server.set_succeeded()
 
 
