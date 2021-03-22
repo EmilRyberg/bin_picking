@@ -8,7 +8,5 @@ bool gripper_lock
 bool gripper_grip_box
 ---
 bool success
-sensor_msgs/CompressedImage rgb_compressed
-sensor_msgs/CompressedImage depth_compressed
 ---
 float32 ping
