@@ -1,12 +1,13 @@
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+
 class Utils:
     @staticmethod
     def tmat_to_trans_and_rot(tmat):
         rot_mat = np.array([[tmat[0][0], tmat[0][1], tmat[0][2]],
-                   [tmat[1][0], tmat[1][1], tmat[1][2]],
-                   [tmat[2][0], tmat[2][1], tmat[2][2]]])
+                            [tmat[1][0], tmat[1][1], tmat[1][2]],
+                            [tmat[2][0], tmat[2][1], tmat[2][2]]])
         trans = np.array([tmat[0][3], tmat[1][3], tmat[2][3]])
         return (trans, Rotation.from_matrix(rot_mat))
 

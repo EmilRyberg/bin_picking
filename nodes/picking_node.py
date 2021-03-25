@@ -1,0 +1,129 @@
+import rospy
+import actionlib
+from std_msgs.msg import String
+from controller.enums import PartEnum, PartCategoryEnum
+from vision.surface_normal import SurfaceNormals
+from PIL import Image as pimg
+import cv2
+import numpy as np
+import random
+import time
+from bin_picking.msg import PickObjectAction, PickObjectFeedback, PickObjectResult
+from cv_bridge import CvBridge
+from move_robot.move_robot_moveit import MoveRobotMoveIt
+
+from ros_camera_interface import ROSCamera
+from testing_resources.find_objects import FindObjects, ObjectInfo
+
+class PickingNode:
+    def __init__(self):
+        rospy.init_node("picking_node", anonymous=True)
+
+        self.action_server = actionlib.SimpleActionServer("pick_object", PickObjectAction, self.callback, auto_start=False)
+
+        self.surface_normals = SurfaceNormals()
+        self.bridge = CvBridge()
+        self.move_robot = MoveRobotMoveIt()
+
+        self.camera = ROSCamera()
+        self.background_img = cv2.imread("testing_resources/background_test.png")
+        self.object_finder = FindObjects(self.background_img, [0, 0, 400, 400])
+
+        self.action_server.start()
+        print("sever started")
+
+    def callback(self, goal):
+        print("entered callback")
+        command = goal.goal_msg
+        if command == "move_out_of_view":
+            self.move_robot.move_out_of_view()
+        elif command == "test":
+            self.move_robot.move_out_of_view()
+            img = self.camera.get_image()
+            depth_img = self.camera.get_depth()
+            object_to_pick = self.object_finder.find_objects(img, debug=False)[0]
+            mask = object_to_pick.mask_full
+            #cv2.imshow("a", object_to_pick.object_img_cutout_cropped)
+            #cv2.waitKey()
+            center, rotvec, normal_vector, relative_angle_to_z, short_vector = self.surface_normals.get_gripper_orientation(mask, depth_img, self.background_img, 0)
+
+            self.move_robot.move_to_home_gripper(speed=3)
+            #self.move_robot.movel(self.move_robot.white_cover_drop)
+
+
+            self.move_robot.movel([0, -300, 300, 0, np.pi, 0], velocity=0.8, use_mm=True)
+            approach_center = center + 200 * normal_vector
+            pose_approach = np.concatenate((approach_center, rotvec))
+            self.move_robot.movel(pose_approach, use_mm=True)
+            pose_pick = np.concatenate((center - 14 * normal_vector, rotvec))
+            self.move_robot.close_gripper(50)
+            self.move_robot.movel(pose_pick, velocity=0.1, use_mm=True)
+            gripper_close_distance = 40
+            self.move_robot.close_gripper(gripper_close_distance, speed=0.5, lock=True)
+            self.move_robot.movel2([center[0], center[1], 100], rotvec, use_mm=True)
+
+            print("test done")
+
+        elif command == "pick_object":
+            pass
+        else:
+            rospy.logerr("received invalid command")
+            result = PickObjectResult()
+            result.success = False
+            self.action_server.set_succeeded(result=result)
+            return
+
+        result = PickObjectResult()
+        result.success = True
+        self.action_server.set_succeeded(result=result)
+        return
+
+
+        mask = self.bridge.imgmsg_to_cv2(goal.mask, desired_encoding="passthrough")
+        reference_img = self.bridge.imgmsg_to_cv2(goal.reference_img, desired_encoding="passthrough")
+        depth_img = self.bridge.imgmsg_to_cv2(goal.depth_img, desired_encoding="passthrough")
+        print(goal.goal_msg)
+
+        print("picking part")
+
+        feedback = PickObjectFeedback()
+        feedback.status = "executing"
+        self.action_server.publish_feedback(feedback)
+
+        #time.sleep(2)
+
+
+        self.move_robot.move_out_of_view()
+
+        center, rotvec, normal_vector, relative_angle_to_z, short_vector = self.surface_normals.get_gripper_orientation(mask, depth_img, reference_img, 0)
+
+        self.move_robot.set_tcp(self.move_robot.gripper_tcp)
+        self.move_robot.move_to_home_gripper(speed=3)
+        self.move_robot.movel([0, -300, 300, 0, np.pi, 0], velocity=0.8)
+        approach_center = center + 200 * normal_vector
+        pose_approach = np.concatenate((approach_center, rotvec))
+        self.move_robot.movel(pose_approach)
+        pose_pick = np.concatenate((center - 14 * normal_vector, rotvec))
+        self.move_robot.close_gripper(40)
+        self.move_robot.movel(pose_pick, velocity=0.1)
+        gripper_close_distance = 0
+        self.move_robot.close_gripper(gripper_close_distance, speed=0.5, lock=True)
+        self.move_robot.movel2([center[0], center[1], 100], rotvec)
+        if not self.has_object_between_fingers(15 / 1000.0):  #dropped part, 18 is part width
+            self.move_robot.open_gripper()
+            self.move_robot.movel([center[0], center[1], 300, 0, 3.14, 0], velocity=0.8)
+            self.move_robot.move_out_of_view()
+        else: #good grip
+            self.move_robot.movel([center[0], center[1], 200, 0, np.pi, 0], velocity=0.8)
+            # self.move_robot.movel([200, -200, 50, 0, np.pi, 0])
+            self.move_to_drop(mask["part"])
+            self.move_robot.open_gripper()
+            self.move_robot.move_to_home_gripper(speed=3)
+
+        result = PickObjectResult()
+        result.success = True
+        self.action_server.set_succeeded(result=result)
+
+
+if __name__ == "__main__":
+    server = PickingNode()

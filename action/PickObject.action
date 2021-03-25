@@ -1,8 +1,11 @@
 #goal definition
-sensor_msgs/Image.msg mask
+sensor_msgs/Image mask
+sensor_msgs/Image reference_img
+sensor_msgs/Image depth_img
+string goal_msg
 ---
 #result definition
 bool success
 ---
 #feedback
-int32 ping
+string status

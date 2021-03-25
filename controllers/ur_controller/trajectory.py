@@ -1,8 +1,7 @@
 from kinematics.inverse import InverseKinematics
-from kinematics.forward import ForwardKinematics
 import numpy as np
 from scipy.spatial.transform import Rotation, Slerp
-from ur_utils import Utils
+from move_robot.ur_utils import Utils
 
 
 class Trajectory:

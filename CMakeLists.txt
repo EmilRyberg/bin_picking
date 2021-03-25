@@ -7,7 +7,7 @@ project(bin_picking)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED genmsg actionlib_msgs std_msgs message_generation moveit_msgs trajectory_msgs)
+find_package(catkin REQUIRED genmsg actionlib_msgs std_msgs message_generation moveit_msgs trajectory_msgs sensor_msgs)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -61,6 +61,7 @@ add_action_files(
   DIRECTORY action
   FILES
   MoveRobot.action
+  PickObject.action
 #   Action2.action
 )
 
@@ -70,6 +71,7 @@ add_action_files(
    actionlib_msgs
    trajectory_msgs
    moveit_msgs
+   sensor_msgs
    std_msgs  # Or other packages containing msgs
 )
 
@@ -162,6 +164,7 @@ catkin_install_python(PROGRAMS
   nodes/moveit_test.py
   nodes/moveit_interface_node.py
   nodes/moveit_interface_node_test.py
+  nodes/picking_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

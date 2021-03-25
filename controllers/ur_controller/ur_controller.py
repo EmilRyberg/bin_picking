@@ -2,19 +2,16 @@
 
 from controller import Robot
 from controller import Connector
-from controller import RangeFinder
-from controller import Camera
 import numpy as np
 from kinematics.inverse import InverseKinematics
 from kinematics.forward import ForwardKinematics
 from trajectory import Trajectory
-from ur_utils import Utils
+from move_robot.ur_utils import Utils
 from scipy.spatial.transform import Rotation
 import socket
-import time
 import struct
 import pickle
-from PIL import Image as pimg
+
 #from P6BinPicking.vision.segmentation.detector import InstanceDetector
 np.set_printoptions(precision=4, suppress=True)
 
