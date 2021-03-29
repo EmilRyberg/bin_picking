@@ -17,7 +17,7 @@ from testing_resources.find_objects import FindObjects, ObjectInfo
 
 class PickingNode:
     def __init__(self, testing=False):
-        rospy.init_node("picking_node", anonymous=True)
+        rospy.init_node("picking_node")
 
 
         self.action_server = actionlib.SimpleActionServer("pick_object", PickObjectAction, self.callback, auto_start=False)
