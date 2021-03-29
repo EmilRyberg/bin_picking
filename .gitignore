@@ -4,3 +4,5 @@
 *.pyc
 
 .vscode/
+
+worlds/.Ur_bin_picking.wbproj

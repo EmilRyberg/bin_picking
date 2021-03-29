@@ -5,13 +5,13 @@ from PIL import Image as pimg
 import imutils
 from aruco import Calibration
 from scipy.spatial.transform import Rotation
-from vision.box_detector import BoxDetector
+#from vision.box_detector import BoxDetector
 
 
 class SurfaceNormals:
     def __init__(self):
         self.aruco = Calibration()
-        self.box_detector = BoxDetector()
+        #self.box_detector = BoxDetector()
         self.box_height = 160
 
     def find_point_in_mask(self, centre_x, centre_y, mask_contours, point_number):
@@ -49,7 +49,7 @@ class SurfaceNormals:
 
     def get_z(self, x, y, depth_image):
         #TODO make finding camera offset automatic
-        z = 1000 - depth_image[y, x] * 10  # get value in mm
+        z = 1000 - depth_image[y, x] * 1000  # get value in mm
         return z
 
     def get_gripper_orientation(self, np_mask, np_depth_image, np_reference_image, rotation_around_self_z=0, debug=False):

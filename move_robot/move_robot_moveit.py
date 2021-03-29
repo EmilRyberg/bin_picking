@@ -1,10 +1,12 @@
 import rospy
 from moveit_msgs.msg import ExecuteTrajectoryGoal
 import numpy as np
+np.set_printoptions(precision=3, suppress=True)
 import math
 import actionlib
 from scipy.spatial.transform.rotation import Rotation
 from bin_picking.msg import MoveRobotAction, MoveRobotGoal
+from move_robot.ur_utils import Utils
 
 
 class MoveRobotMoveIt:
@@ -14,17 +16,13 @@ class MoveRobotMoveIt:
         self.client = actionlib.SimpleActionClient("bin_picking_moveit_interface", MoveRobotAction)
         self.client.wait_for_server()
         #self.home_pose_l = [35, -300, 300, 0, 0, -0.8] # old
-        self.home_pose_l = [-0.035, 0.300, 0.300, 0, 0, -0.8]
-        #self.home_pose_gripper = [-60, -60, -110, -100, 90, -60] # old
-        #self.home_pose_gripper = [0.060, 0.060, -0.110, -100, 90, -60]
-        #self.home_pose_suction = [-60, -60, -110, -190, -70, 100] # old
-        #self.home_pose_suction = [0.060, 0.060, -0.110, -190, -70, 100]
+        self.home_pose_l = [0.035, -0.300, 0.300, 0, 0, -0.8]
         self.home_pose_gripper = [-60, -60, -110, -100, 90, -60]
         self.home_pose_suction = [-60, -60, -110, 170, -70, 100]
         self.move_out_of_view_pose = [-150, -60, -110, 170, -70, 100]
         self.default_orientation = [0, 0, 0]
-        self.gripper_tcp = [0, 0, 0.201, 0, 0, 0]
-        self.suction_tcp = [-0.193, 0, 0.08, 0, -np.pi/2, 0]
+        #self.gripper_tcp = [0, 0, 0.201, 0, 0, 0]
+        #self.suction_tcp = [-0.193, 0, 0.08, 0, -np.pi/2, 0]
 
         self.camera_pose_gripper = [-60, -60, -110, -100, -90, -75]
         self.camera_pose_suction = [-5, -40, -100, -140, 0, -170]
@@ -35,14 +33,14 @@ class MoveRobotMoveIt:
         self.box_closed = 3
 
         #Part drop locations:
-        #self.white_cover_drop = [350, -400, 100, 2.89, 1.21, 0] # old
-        #self.white_cover_drop = [-0.350, 0.400, 0.300, -0.61, 1.48, 0.62]
+        self.white_cover_drop = [0.350, -0.400, 0.300, 2.89, 1.21, 0] # old
+        #self.white_cover_drop = [-0.350, 0.400, 0.300, -0.61, 1.48, 0.62] #intermediate calc
         # New frames are R_z(pi) * current_transform * R_z(pi/2) * R_y(-pi/2)
-        self.white_cover_drop = [-0.350, 0.400, 0.300, 0.61, 1.48, -0.61] # this one is calibrated for new frames
-        self.black_cover_drop = [200, -250, 100, 2.89, 1.21, 0]
-        self.blue_cover_drop = [-50, -250, 100, 2.89, 1.21, 0]
-        self.bottom_cover_drop = [-150, -350, 100, 2.89, 1.21, 0]
-        self.pcb_drop = [-250, -450, 100, 2.89, 1.21, 0]
+        #self.white_cover_drop = [-0.350, 0.400, 0.300, 0.61, 1.48, -0.61] # this one is calibrated for new frames
+        self.black_cover_drop = [200, -250, 100, 2.89, 1.21, 0] #old
+        self.blue_cover_drop = [-50, -250, 100, 2.89, 1.21, 0] #old
+        self.bottom_cover_drop = [-150, -350, 100, 2.89, 1.21, 0] #old
+        self.pcb_drop = [-250, -450, 100, 2.89, 1.21, 0] #old
 
         rospy.loginfo("Move Robot interface ready")
 
@@ -58,8 +56,15 @@ class MoveRobotMoveIt:
         self.client.send_goal(goal)
         self.client.wait_for_result()
 
-    def movel(self, pose, acceleration=1.0, velocity=0.2):
+    def movel(self, pose, acceleration=1.0, velocity=0.2, use_mm=False):
         pose_local = pose.copy()
+        if use_mm:
+            pose_local[0] *= 0.001
+            pose_local[1] *= 0.001
+            pose_local[2] *= 0.001
+        pose_local = self.apply_gripper_tcp_offset(pose_local)
+        pose_local = self.apply_transform_real_to_moveit(pose_local)
+        print("moving to " + str(pose_local))
         quaternion = Rotation.from_rotvec(pose_local[3:]).as_quat()
         goal = MoveRobotGoal()
         goal.action = "cartesian"
@@ -73,8 +78,8 @@ class MoveRobotMoveIt:
         self.client.send_goal(goal)
         self.client.wait_for_result()
 
-    def movel2(self, location, orientation, acceleration=1.0, velocity=0.2):
-        self.movel(np.concatenate(location, orientation))
+    def movel2(self, location, orientation, acceleration=1.0, velocity=0.2, use_mm=False):
+        self.movel(np.concatenate((location, orientation)), use_mm=use_mm)
 
     def set_tcp(self, pose):
         # TODO: Implement this
@@ -126,12 +131,45 @@ class MoveRobotMoveIt:
         self.client.send_goal(goal)
         self.client.wait_for_result()
 
+    def apply_transform_real_to_moveit(self, pose):
+        pose_local = pose.copy()
+        tvec = pose_local[:3]
+        orientation = Rotation.from_rotvec(pose_local[3:])
+        pose_tmat = Utils.trans_and_rot_to_tmat(tvec, orientation)
+        rot_z_1 = Rotation.from_euler("xyz", [0, 0, np.pi])
+        rot_z_2 = Rotation.from_euler("xyz", [0, 0, np.pi/2])
+        rot_y = Rotation.from_euler("xyz", [0, -np.pi/2, 0])
+        tmat_z_1 = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_z_1)
+        tmat_z_2 = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_z_2)
+        tmat_y = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_y)
+        applied_tmat = tmat_z_1 @ pose_tmat @ tmat_z_2 @ tmat_y
+        applied_trans, applied_rot = Utils.tmat_to_trans_and_rot(applied_tmat)
+        applied_rvect = applied_rot.as_rotvec()
+        return np.concatenate((applied_trans, applied_rvect))
+
+    def apply_gripper_tcp_offset(self, pose):
+        pose_trans = pose[:3]
+        pose_rot = Rotation.from_rotvec(pose[3:])
+        pose_tmat = Utils.trans_and_rot_to_tmat(pose_trans, pose_rot)
+        tcp_tmat = Utils.trans_and_rot_to_tmat([0, 0, -0.201], Rotation.from_rotvec([0, 0, 0]))
+        new_pose_tmat = pose_tmat @ tcp_tmat
+        new_pose_trans, new_pose_rot = Utils.tmat_to_trans_and_rot(new_pose_tmat)
+        new_pose_rotvec = new_pose_rot.as_rotvec()
+        return np.concatenate((new_pose_trans, new_pose_rotvec))
+
 
 if __name__ == "__main__":
     mr = MoveRobotMoveIt(create_node=True)
     #mr.close_gripper(10)
     #mr.open_gripper()
     #mr.move_to_home_gripper()
+    #mr.move_to_home_l()
     #mr.move_to_home_suction()
     #mr.move_out_of_view()
-    mr.movel(mr.white_cover_drop)
+    #mr.movel(mr.white_cover_drop)
+
+    #[0.350, -0.400, 0.300, 2.89, 1.21, 0] #old
+    #[-0.350, 0.400, 0.300, 0.61, 1.48, -0.61] #new expected
+    #a = mr.apply_gripper_tcp_offset([0.350, -0.400, 0.300, 2.89, 1.21, 0])
+    #b = mr.apply_transform_real_to_moveit(a)
+    print("done")
