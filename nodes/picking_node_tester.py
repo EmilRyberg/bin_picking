@@ -4,7 +4,6 @@ from bin_picking.msg import PickObjectAction, PickObjectGoal
 import cv2
 from cv_bridge import CvBridge
 import numpy as np
-import cv_bridge
 
 rospy.init_node("picking_node_tester")
 

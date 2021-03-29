@@ -1,17 +1,11 @@
 import rospy
 import actionlib
-from std_msgs.msg import String
-from controller.enums import PartEnum, PartCategoryEnum
 from vision.surface_normal import SurfaceNormals
-from PIL import Image as pimg
 import cv2
 import numpy as np
-import random
-import time
 from bin_picking.msg import PickObjectAction, PickObjectFeedback, PickObjectResult
 from cv_bridge import CvBridge
 from move_robot.move_robot_moveit import MoveRobotMoveIt
-
 from ros_camera_interface import ROSCamera
 from testing_resources.find_objects import FindObjects, ObjectInfo
 
