@@ -1,9 +1,8 @@
-import os
 import numpy as np
 import cv2
 from PIL import Image as pimg
 import imutils
-from aruco import Calibration
+from bin_picking_lib.aruco import Calibration
 from scipy.spatial.transform import Rotation
 #from vision.box_detector import BoxDetector
 

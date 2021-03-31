@@ -6,7 +6,7 @@ import math
 import actionlib
 from scipy.spatial.transform.rotation import Rotation
 from bin_picking.msg import MoveRobotAction, MoveRobotGoal
-from move_robot.ur_utils import Utils
+from bin_picking_lib.move_robot.ur_utils import Utils
 
 
 class MoveRobotMoveIt:
@@ -14,6 +14,7 @@ class MoveRobotMoveIt:
         if create_node:
             rospy.init_node("moveit_test", anonymous=True)
         self.client = actionlib.SimpleActionClient("bin_picking_moveit_interface", MoveRobotAction)
+        rospy.loginfo("MoveRobotMoveIt waiting for action server to come online")
         self.client.wait_for_server()
         #self.home_pose_l = [35, -300, 300, 0, 0, -0.8] # old
         self.home_pose_l = [0.035, -0.300, 0.300, 0, 0, -0.8]
@@ -165,7 +166,7 @@ if __name__ == "__main__":
     #mr.move_to_home_gripper()
     #mr.move_to_home_l()
     #mr.move_to_home_suction()
-    #mr.move_out_of_view()
+    mr.move_out_of_view()
     #mr.movel(mr.white_cover_drop)
 
     #[0.350, -0.400, 0.300, 2.89, 1.21, 0] #old

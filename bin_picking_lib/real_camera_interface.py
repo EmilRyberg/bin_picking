@@ -1,6 +1,5 @@
 import numpy as np
-from PIL import Image as pimg
-from camera_interface import CameraInterface
+from bin_picking.camera_interface import CameraInterface
 import pyrealsense2 as rs
 
 

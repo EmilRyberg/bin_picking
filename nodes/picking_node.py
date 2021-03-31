@@ -1,19 +1,19 @@
+#!/usr/bin/env python3
 import rospy
 import actionlib
-from vision.surface_normal import SurfaceNormals
+from bin_picking_lib.vision.surface_normal import SurfaceNormals
 import cv2
 import numpy as np
-from bin_picking.msg import PickObjectAction, PickObjectFeedback, PickObjectResult
+from bin_picking.msg import PickObjectAction, PickObjectFeedback, PickObjectResult, PickObjectGoal
 from cv_bridge import CvBridge
-from move_robot.move_robot_moveit import MoveRobotMoveIt
-from ros_camera_interface import ROSCamera
+from bin_picking_lib.move_robot.move_robot_moveit import MoveRobotMoveIt
+from vision.ros_camera_interface import ROSCamera
 from testing_resources.find_objects import FindObjects, ObjectInfo
+
 
 class PickingNode:
     def __init__(self, testing=False):
         rospy.init_node("picking_node")
-
-
         self.action_server = actionlib.SimpleActionServer("pick_object", PickObjectAction, self.callback, auto_start=False)
 
         self.surface_normals = SurfaceNormals()
@@ -26,10 +26,10 @@ class PickingNode:
             self.object_finder = FindObjects(self.background_img, [0, 0, 400, 400])
 
         self.action_server.start()
-        print("sever started")
+        rospy.loginfo("server started")
 
-    def callback(self, goal):
-        print("entered callback")
+    def callback(self, goal: PickObjectGoal):
+        rospy.loginfo("entered callback")
         feedback = PickObjectFeedback()
         feedback.status = "executing"
         self.action_server.publish_feedback(feedback)
@@ -59,7 +59,7 @@ class PickingNode:
             gripper_close_distance = 40
             self.move_robot.close_gripper(gripper_close_distance, speed=0.5, lock=True)
             self.move_robot.movel2([center[0], center[1], 100], rotvec, use_mm=True)
-            print("test done")
+            rospy.loginfo("test done")
         elif command == "pick_object":
             mask = self.bridge.imgmsg_to_cv2(goal.mask, desired_encoding="passthrough")
             reference_img = self.bridge.imgmsg_to_cv2(goal.reference_img, desired_encoding="passthrough")

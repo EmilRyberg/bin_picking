@@ -4,8 +4,7 @@ from vision.surface_normal import SurfaceNormals
 from PIL import Image as pimg
 import cv2
 import numpy as np
-import random
-from camera_interface import CameraInterface
+from bin_picking.camera_interface import CameraInterface
 from vision.box_detector import BoxDetector
 from scipy.spatial.transform import Rotation
 
@@ -328,7 +327,7 @@ class Controller:
 
 if __name__ == "__main__":
     from simulation_camera_interface import SimulationCamera
-    from simulation_connector import SimulationConnector
+    from bin_picking.simulation_connector import SimulationConnector
     connector = SimulationConnector(2000)
     camera = SimulationCamera(connector)
     controller = Controller(connector, camera, "../../../../model_final_sim.pth")

@@ -1,17 +1,12 @@
-from vision.yolo.detector import Detector
 from PIL import Image as pimg
 from PIL import ImageDraw
 from cv2 import cv2
 import glob
-import imutils
 import numpy as np
-import scipy.misc
-import os
 from vision.orientation.orientation_detector import OrientationDetectorNet
-from utils.image_shifter import RuntimeShifter
-from aruco import Calibration
+from bin_picking_lib.aruco import Calibration
 import torch
-from vision.segmentation.detector import InstanceDetector
+from bin_picking_lib.vision.segmentation.detector import InstanceDetector
 import torch.utils.model_zoo
 import os
 

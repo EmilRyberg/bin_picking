@@ -2,7 +2,7 @@
 sensor_msgs/Image mask
 sensor_msgs/Image reference_img
 sensor_msgs/Image depth_img
-string goal_msg
+string command
 ---
 #result definition
 bool success

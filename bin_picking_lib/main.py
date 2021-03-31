@@ -1,7 +1,7 @@
 from controller.controller import Controller
 from move_robot.move_robot import MoveRobot
 from safety.safety import Safety
-from real_camera_interface import RealCamera
+from bin_picking.real_camera_interface import RealCamera
 import threading
 
 UR_IP = "192.168.1.148"
