@@ -7,7 +7,7 @@ import numpy as np
 from bin_picking.msg import PickObjectAction, PickObjectFeedback, PickObjectResult, PickObjectGoal
 from cv_bridge import CvBridge
 from bin_picking_lib.move_robot.move_robot_moveit import MoveRobotMoveIt
-from vision.ros_camera_interface import ROSCamera
+from vision_lib.ros_camera_interface import ROSCamera
 from testing_resources.find_objects import FindObjects, ObjectInfo
 
 
