@@ -45,7 +45,7 @@ class MoveRobotMoveIt:
 
         rospy.loginfo("Move Robot interface ready")
 
-    def movej(self, pose, acceleration=1.0, velocity=0.1, degrees=True):
+    def movej(self, pose, acceleration=1.0, velocity=0.1, degrees=True, max_retries=3):
         pose_local = pose.copy()
         if degrees:
             for i in range(6):
@@ -54,10 +54,19 @@ class MoveRobotMoveIt:
         goal.action = "joint"
         goal.joint_goal.positions = pose_local
         goal.joint_goal.velocities = np.repeat(velocity, 6)
-        self.client.send_goal(goal)
-        self.client.wait_for_result()
+        retry_amount = 0
+        success = False
+        while retry_amount < max_retries:
+            self.client.send_goal(goal)
+            self.client.wait_for_result()
+            result = self.client.get_result()
+            success = result.success
+            if success:
+                break
+            retry_amount += 1
+        return success
 
-    def movel(self, pose, acceleration=1.0, velocity=0.2, use_mm=False):
+    def movel(self, pose, acceleration=1.0, velocity=0.2, use_mm=False, max_retries=3):
         pose_local = pose.copy()
         if use_mm:
             pose_local[0] *= 0.001
@@ -76,33 +85,44 @@ class MoveRobotMoveIt:
         goal.cartesian_goal.orientation.y = quaternion[1]
         goal.cartesian_goal.orientation.z = quaternion[2]
         goal.cartesian_goal.orientation.w = quaternion[3]
-        self.client.send_goal(goal)
-        self.client.wait_for_result()
+        retry_amount = 0
+        success = False
+        while retry_amount < max_retries:
+            self.client.send_goal(goal)
+            self.client.wait_for_result()
+            result = self.client.get_result()
+            success = result.success
+            if success:
+                break
+            retry_amount += 1
+        return success
 
-    def movel2(self, location, orientation, acceleration=1.0, velocity=0.2, use_mm=False):
-        self.movel(np.concatenate((location, orientation)), use_mm=use_mm)
+    def movel2(self, location, orientation, acceleration=1.0, velocity=0.2, use_mm=False, max_retries=3):
+        return self.movel(np.concatenate((location, orientation)), use_mm=use_mm, max_retries=max_retries)
 
     def set_tcp(self, pose):
         # TODO: Implement this
         pass
 
     def move_to_home_suction(self, speed=1.0):
-        self.movej(self.home_pose_suction, acceleration=1.0, velocity=speed)
+        return self.movej(self.home_pose_suction, acceleration=1.0, velocity=speed)
 
     def move_to_home_gripper(self, speed=1.0):
-        self.movej(self.home_pose_gripper, acceleration=1.0, velocity=speed)
+        return self.movej(self.home_pose_gripper, acceleration=1.0, velocity=speed)
 
     def move_to_home_l(self, speed=1.0):
-        self.movel(self.home_pose_l, acceleration=1.0, velocity=speed)
+        return self.movel(self.home_pose_l, acceleration=1.0, velocity=speed)
 
     def move_out_of_view(self, speed=2.0):
-        self.movej(self.move_out_of_view_pose, acceleration=1.0, velocity=speed)
+        return self.movej(self.move_out_of_view_pose, acceleration=1.0, velocity=speed)
 
     def open_gripper(self):
         goal = MoveRobotGoal()
         goal.action = "open_gripper"
         self.client.send_goal(goal)
         self.client.wait_for_result()
+        result = self.client.get_result()
+        return result.success
 
     def close_gripper(self, width=0, speed=5, lock=False, gripping_box=False):
         goal = MoveRobotGoal()
@@ -113,24 +133,30 @@ class MoveRobotMoveIt:
         goal.gripper_grip_box = gripping_box
         self.client.send_goal(goal)
         self.client.wait_for_result()
+        result = self.client.get_result()
+        return result.success
 
     def grasp_cover(self):
-        self.close_gripper(self.cover_closed)
+        return self.close_gripper(self.cover_closed)
 
     def grasp_box(self):
-        self.close_gripper(self.box_closed, gripping_box=True)
+        return self.close_gripper(self.box_closed, gripping_box=True)
 
     def enable_suction(self):
         goal = MoveRobotGoal()
         goal.action = "suction_on"
         self.client.send_goal(goal)
         self.client.wait_for_result()
+        result = self.client.get_result()
+        return result.success
 
     def disable_suction(self):
         goal = MoveRobotGoal()
         goal.action = "suction_off"
         self.client.send_goal(goal)
         self.client.wait_for_result()
+        result = self.client.get_result()
+        return result.success
 
     def apply_transform_real_to_moveit(self, pose):
         pose_local = pose.copy()

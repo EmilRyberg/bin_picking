@@ -3,6 +3,7 @@ sensor_msgs/Image mask
 sensor_msgs/Image reference_img
 sensor_msgs/Image depth_img
 string command
+geometry_msgs/Pose position
 ---
 #result definition
 bool success

@@ -40,66 +40,72 @@ class MoveItInterfaceNode:
                                                 depth_compressed=result.depth_compressed)
             self.action_server.set_succeeded(move_robot_result)
         else:
-            if goal.action == "joint":
-                rospy.loginfo("Moving to joint position")
-                joint_goal = [
-                    goal.joint_goal.positions[0],
-                    goal.joint_goal.positions[1],
-                    goal.joint_goal.positions[2],
-                    goal.joint_goal.positions[3],
-                    goal.joint_goal.positions[4],
-                    goal.joint_goal.positions[5]
-                ]
-                self.arm_group.go(joint_goal, wait=True)
-                self.arm_group.stop()
-                rospy.loginfo("Finished movement")
-            elif goal.action == "cartesian":
-                rospy.loginfo("Moving to cartesian position")
-                self.arm_group.set_pose_target(goal.cartesian_goal)
-                plan = self.arm_group.plan()
-                trajectory_goal = moveit_msgs.msg.ExecuteTrajectoryGoal
-                trajectory_goal.trajectory = plan
-                self.arm_client.send_goal(trajectory_goal)
-                self.arm_client.wait_for_result(rospy.Duration(20))
-                rospy.loginfo("Finished movement")
-            elif goal.action == "home":
-                rospy.loginfo("Moving to home")
-                self.arm_group.set_named_target("home")
-                plan = self.arm_group.plan()
-                trajectory_goal = moveit_msgs.msg.ExecuteTrajectoryGoal
-                trajectory_goal.trajectory = plan
-                self.arm_client.send_goal(trajectory_goal)
-                self.arm_client.wait_for_result(rospy.Duration(20))
-                rospy.loginfo("Finished movement")
-            elif goal.action == "close_gripper":
-                width = goal.gripper_width
-                speed = goal.gripper_speed
-                should_lock = goal.gripper_lock
-                should_grip_box = goal.gripper_grip_box
-                gripper_goal = GripperGoal()
-                gripper_goal.action = "close"
-                gripper_goal.width = width
-                gripper_goal.speed = speed
-                gripper_goal.lock = should_lock
-                gripper_goal.grip_box = should_grip_box
-                self.gripper_client.send_goal(gripper_goal)
-                self.gripper_client.wait_for_result()
-            elif goal.action == "open_gripper":
-                gripper_goal = GripperGoal()
-                gripper_goal.action = "open"
-                self.gripper_client.send_goal(gripper_goal)
-                self.gripper_client.wait_for_result()
-            elif goal.action == "suction_on":
-                gripper_goal = GripperGoal()
-                gripper_goal.action = "suction_on"
-                self.gripper_client.send_goal(gripper_goal)
-                self.gripper_client.wait_for_result()
-            elif goal.action == "suction_off":
-                gripper_goal = GripperGoal()
-                gripper_goal.action = "suction_off"
-                self.gripper_client.send_goal(gripper_goal)
-                self.gripper_client.wait_for_result()
-            self.action_server.set_succeeded()
+            try:
+                if goal.action == "joint":
+                    rospy.loginfo("Moving to joint position")
+                    joint_goal = [
+                        goal.joint_goal.positions[0],
+                        goal.joint_goal.positions[1],
+                        goal.joint_goal.positions[2],
+                        goal.joint_goal.positions[3],
+                        goal.joint_goal.positions[4],
+                        goal.joint_goal.positions[5]
+                    ]
+                    self.arm_group.go(joint_goal, wait=True)
+                    self.arm_group.stop()
+                    rospy.loginfo("Finished movement")
+                elif goal.action == "cartesian":
+                    rospy.loginfo("Moving to cartesian position")
+                    self.arm_group.set_pose_target(goal.cartesian_goal)
+                    plan = self.arm_group.plan()
+                    trajectory_goal = moveit_msgs.msg.ExecuteTrajectoryGoal
+                    trajectory_goal.trajectory = plan
+                    self.arm_client.send_goal(trajectory_goal)
+                    self.arm_client.wait_for_result(rospy.Duration(20))
+                    rospy.loginfo("Finished movement")
+                elif goal.action == "home":
+                    rospy.loginfo("Moving to home")
+                    self.arm_group.set_named_target("home")
+                    plan = self.arm_group.plan()
+                    trajectory_goal = moveit_msgs.msg.ExecuteTrajectoryGoal
+                    trajectory_goal.trajectory = plan
+                    self.arm_client.send_goal(trajectory_goal)
+                    self.arm_client.wait_for_result(rospy.Duration(20))
+                    rospy.loginfo("Finished movement")
+                elif goal.action == "close_gripper":
+                    width = goal.gripper_width
+                    speed = goal.gripper_speed
+                    should_lock = goal.gripper_lock
+                    should_grip_box = goal.gripper_grip_box
+                    gripper_goal = GripperGoal()
+                    gripper_goal.action = "close"
+                    gripper_goal.width = width
+                    gripper_goal.speed = speed
+                    gripper_goal.lock = should_lock
+                    gripper_goal.grip_box = should_grip_box
+                    self.gripper_client.send_goal(gripper_goal)
+                    self.gripper_client.wait_for_result()
+                elif goal.action == "open_gripper":
+                    gripper_goal = GripperGoal()
+                    gripper_goal.action = "open"
+                    self.gripper_client.send_goal(gripper_goal)
+                    self.gripper_client.wait_for_result()
+                elif goal.action == "suction_on":
+                    gripper_goal = GripperGoal()
+                    gripper_goal.action = "suction_on"
+                    self.gripper_client.send_goal(gripper_goal)
+                    self.gripper_client.wait_for_result()
+                elif goal.action == "suction_off":
+                    gripper_goal = GripperGoal()
+                    gripper_goal.action = "suction_off"
+                    self.gripper_client.send_goal(gripper_goal)
+                    self.gripper_client.wait_for_result()
+                result = MoveRobotResult(success=True)
+                self.action_server.set_succeeded(result=result)
+            except Exception as e:
+                rospy.logerr(e)
+                result = MoveRobotResult(success=False)
+                self.action_server.set_succeeded(result=result)
 
 
 if __name__ == "__main__":

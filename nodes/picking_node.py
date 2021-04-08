@@ -11,6 +11,21 @@ from vision_lib.ros_camera_interface import ROSCamera
 from testing_resources.find_objects import FindObjects, ObjectInfo
 
 
+class MoveCommand:
+    def __init__(self, should_terminate_if_fails, method, *args, **kwargs):
+        self.should_terminate_if_fails = should_terminate_if_fails
+        self.method = method
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self):
+        success = self.method(*self.args, **self.kwargs)
+        if not success and self.should_terminate_if_fails:
+            rospy.logerr("Moving robot failed after retries")
+            return False
+        return True
+
+
 class PickingNode:
     def __init__(self, testing=False):
         rospy.init_node("picking_node")
@@ -34,6 +49,7 @@ class PickingNode:
         feedback.status = "executing"
         self.action_server.publish_feedback(feedback)
         command = goal.command
+        succeeded = True
         if command == "move_out_of_view":
             self.move_robot.move_out_of_view()
         elif command == "test":
@@ -65,30 +81,36 @@ class PickingNode:
             reference_img = self.bridge.imgmsg_to_cv2(goal.reference_img, desired_encoding="passthrough")
             depth_img = self.bridge.imgmsg_to_cv2(goal.depth_img, desired_encoding="passthrough")
             center, rotvec, normal_vector, relative_angle_to_z, short_vector = self.surface_normals.get_gripper_orientation(mask, depth_img, reference_img, 0)
-            self.move_robot.move_to_home_gripper(speed=3)
-            self.move_robot.movel([0, -300, 300, 0, np.pi, 0], velocity=0.8, use_mm=True)
             approach_center = center + 200 * normal_vector
             pose_approach = np.concatenate((approach_center, rotvec))
-            self.move_robot.movel(pose_approach, use_mm=True)
             pose_pick = np.concatenate((center - 14 * normal_vector, rotvec))
-            self.move_robot.close_gripper(50)
-            self.move_robot.movel(pose_pick, velocity=0.1, use_mm=True)
             gripper_close_distance = 20
-            self.move_robot.close_gripper(gripper_close_distance, speed=0.5, lock=True)
-            self.move_robot.movel2([center[0], center[1], 100], rotvec, use_mm=True)
-            self.move_robot.movel2([center[0], center[1], 300], [0, np.pi, 0], use_mm=True)
+            commands = [
+                MoveCommand(False, self.move_robot.move_to_home_gripper, speed=3),
+                MoveCommand(True, self.move_robot.movel, [0, -300, 300, 0, np.pi, 0], velocity=0.8, use_mm=True, max_retries=3),
+                MoveCommand(True, self.move_robot.movel, pose_approach, use_mm=True, max_retries=3),
+                MoveCommand(True, self.move_robot.close_gripper, 50),
+                MoveCommand(True, self.move_robot.movel, pose_pick, velocity=0.1, use_mm=True),
+                MoveCommand(True, self.move_robot.close_gripper, gripper_close_distance, speed=0.5, lock=True),
+                MoveCommand(True, self.move_robot.movel2, [center[0], center[1], 100], rotvec, use_mm=True),
+                MoveCommand(True, self.move_robot.movel2, [center[0], center[1], 300], [0, np.pi, 0], use_mm=True)
+            ]
+            for command in commands:
+                success = command()
+                if not success:  # not success here means that we want to terminate if it fails
+                    succeeded = False
+                    break
         elif command == "place_object":
             self.move_robot.movel2(goal.position, [0, np.pi, 0], use_mm=True)
             self.move_robot.open_gripper()
         else:
             rospy.logerr("received invalid command" + command)
-            raise Exception("received invalid command" + command)
+            succeeded = False
 
         result = PickObjectResult()
-        result.success = True
+        result.success = succeeded
         self.action_server.set_succeeded(result=result)
-        return
 
 
 if __name__ == "__main__":
-    server = PickingNode(testing=True)
+    server = PickingNode(testing=False)
