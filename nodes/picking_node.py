@@ -37,6 +37,9 @@ class PickingNode:
 
         if testing:
             self.camera = ROSCamera()
+            self.move_robot.move_out_of_view()
+            img = self.camera.get_image()
+            cv2.imwrite("testing_resources/33.png", img)
             self.background_img = cv2.imread("testing_resources/background_test.png")
             self.object_finder = FindObjects(self.background_img, [0, 0, 400, 400])
 
@@ -113,4 +116,4 @@ class PickingNode:
 
 
 if __name__ == "__main__":
-    server = PickingNode(testing=False)
+    server = PickingNode(testing=True)
