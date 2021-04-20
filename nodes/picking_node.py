@@ -103,6 +103,16 @@ class PickingNode:
         elif command == "place_object":
             self.move_robot.movel2(goal.position, [0, np.pi, 0], use_mm=True)
             self.move_robot.open_gripper()
+        elif command == "point_at":
+            mask = self.bridge.imgmsg_to_cv2(goal.mask, desired_encoding="passthrough")
+            reference_img = self.bridge.imgmsg_to_cv2(goal.reference_img, desired_encoding="passthrough")
+            depth_img = self.bridge.imgmsg_to_cv2(goal.depth_img, desired_encoding="passthrough")
+            center, rotvec, normal_vector, relative_angle_to_z, short_vector = self.surface_normals.get_gripper_orientation(mask, depth_img, reference_img, 0)
+            self.move_robot.move_to_home_gripper(speed=3)
+            position = [center[0], center[1], 300]
+            self.move_robot.movel2(position, [0, np.pi, 0], use_mm=True)
+            position[2] = 100
+            self.move_robot.movel2(position, [0, np.pi, 0], use_mm=True)
         else:
             rospy.logerr("received invalid command" + command)
             succeeded = False
