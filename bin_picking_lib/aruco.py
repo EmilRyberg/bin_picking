@@ -28,7 +28,7 @@ class Calibration:
         self.reference_image = np.array([])
 
     def calibrate(self, np_image, x_coordinate, y_coordinate, world_z):
-        assert x_coordinate > 0 and y_coordinate > 0 and world_z >= 0, "[FATAL] aruco calibrate got invalid x, y or z"
+        assert world_z >= 0, f"[FATAL] aruco calibrate got invalid x, y or z ({x_coordinate},{y_coordinate},{world_z})"
         timer = time.time()
 
         if len(self.reference_image) == 0:

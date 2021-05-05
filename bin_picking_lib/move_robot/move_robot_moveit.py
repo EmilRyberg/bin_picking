@@ -9,6 +9,39 @@ from bin_picking.msg import MoveRobotAction, MoveRobotGoal
 from bin_picking_lib.move_robot.ur_utils import Utils
 
 
+def apply_transform_real_to_moveit(pose):
+    pose_local = pose.copy()
+    tvec = pose_local[:3]
+    orientation = Rotation.from_rotvec(pose_local[3:])
+    pose_tmat = Utils.trans_and_rot_to_tmat(tvec, orientation)
+    rot_z_1 = Rotation.from_euler("xyz", [0, 0, np.pi])
+    rot_z_2 = Rotation.from_euler("xyz", [0, 0, np.pi / 2])
+    rot_y = Rotation.from_euler("xyz", [0, -np.pi / 2, 0])
+    tmat_z_1 = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_z_1)
+    tmat_z_2 = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_z_2)
+    tmat_y = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_y)
+    applied_tmat = tmat_z_1 @ pose_tmat @ tmat_z_2 @ tmat_y
+    applied_trans, applied_rot = Utils.tmat_to_trans_and_rot(applied_tmat)
+    applied_rvect = applied_rot.as_rotvec()
+    return np.concatenate((applied_trans, applied_rvect))
+
+
+def apply_transform_moveit_to_real(pose):
+    pose_local = pose.copy()
+    tvec = pose_local[:3]
+    orientation = Rotation.from_rotvec(pose_local[3:])
+    pose_tmat = Utils.trans_and_rot_to_tmat(tvec, orientation)
+    rot_z_1 = Rotation.from_euler("xyz", [0, 0, -np.pi])
+    rot_z_2 = Rotation.from_euler("xyz", [0, 0, -np.pi / 2])
+    rot_y = Rotation.from_euler("xyz", [0, np.pi / 2, 0])
+    tmat_z_1 = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_z_1)
+    tmat_z_2 = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_z_2)
+    tmat_y = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_y)
+    applied_tmat = tmat_z_1 @ pose_tmat @ tmat_y @ tmat_z_2
+    applied_trans, applied_rot = Utils.tmat_to_trans_and_rot(applied_tmat)
+    applied_rvect = applied_rot.as_rotvec()
+    return np.concatenate((applied_trans, applied_rvect))
+
 class MoveRobotMoveIt:
     def __init__(self, create_node=False):
         if create_node:
@@ -73,7 +106,7 @@ class MoveRobotMoveIt:
             pose_local[1] *= 0.001
             pose_local[2] *= 0.001
         pose_local = self.apply_gripper_tcp_offset(pose_local)
-        pose_local = self.apply_transform_real_to_moveit(pose_local)
+        pose_local = apply_transform_real_to_moveit(pose_local)
         print("moving to " + str(pose_local))
         quaternion = Rotation.from_rotvec(pose_local[3:]).as_quat()
         goal = MoveRobotGoal()
@@ -158,22 +191,6 @@ class MoveRobotMoveIt:
         result = self.client.get_result()
         return result.success
 
-    def apply_transform_real_to_moveit(self, pose):
-        pose_local = pose.copy()
-        tvec = pose_local[:3]
-        orientation = Rotation.from_rotvec(pose_local[3:])
-        pose_tmat = Utils.trans_and_rot_to_tmat(tvec, orientation)
-        rot_z_1 = Rotation.from_euler("xyz", [0, 0, np.pi])
-        rot_z_2 = Rotation.from_euler("xyz", [0, 0, np.pi/2])
-        rot_y = Rotation.from_euler("xyz", [0, -np.pi/2, 0])
-        tmat_z_1 = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_z_1)
-        tmat_z_2 = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_z_2)
-        tmat_y = Utils.trans_and_rot_to_tmat([0, 0, 0], rot_y)
-        applied_tmat = tmat_z_1 @ pose_tmat @ tmat_z_2 @ tmat_y
-        applied_trans, applied_rot = Utils.tmat_to_trans_and_rot(applied_tmat)
-        applied_rvect = applied_rot.as_rotvec()
-        return np.concatenate((applied_trans, applied_rvect))
-
     def apply_gripper_tcp_offset(self, pose):
         pose_trans = pose[:3]
         pose_rot = Rotation.from_rotvec(pose[3:])
@@ -186,17 +203,23 @@ class MoveRobotMoveIt:
 
 
 if __name__ == "__main__":
-    mr = MoveRobotMoveIt(create_node=True)
+    test_pose = np.array([-0.4379,0.33657,0.33055, 0.5, 0, 0.5])
+    #moveit_pose = apply_transform_real_to_moveit(test_pose)
+    world_pose = apply_transform_moveit_to_real(test_pose)
+    print("start pose", test_pose)
+    #print("moveit_pose", moveit_pose)
+    print("world_pose", world_pose)
+    #mr = MoveRobotMoveIt(create_node=True)
     #mr.close_gripper(10)
     #mr.open_gripper()
     #mr.move_to_home_gripper()
     #mr.move_to_home_l()
     #mr.move_to_home_suction()
-    mr.move_out_of_view()
+    #mr.move_out_of_view()
     #mr.movel(mr.white_cover_drop)
 
     #[0.350, -0.400, 0.300, 2.89, 1.21, 0] #old
     #[-0.350, 0.400, 0.300, 0.61, 1.48, -0.61] #new expected
     #a = mr.apply_gripper_tcp_offset([0.350, -0.400, 0.300, 2.89, 1.21, 0])
     #b = mr.apply_transform_real_to_moveit(a)
-    print("done")
+    #print("done")
