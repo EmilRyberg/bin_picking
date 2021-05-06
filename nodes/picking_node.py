@@ -85,7 +85,7 @@ class PickingNode:
             center, rotvec, normal_vector, relative_angle_to_z, short_vector = self.surface_normals.get_gripper_orientation(mask, depth_img, reference_img, 0)
             approach_center = center + 200 * normal_vector
             pose_approach = np.concatenate((approach_center, rotvec))
-            pose_pick = np.concatenate((center - 14 * normal_vector, rotvec))
+            pose_pick = np.concatenate((center - 8 * normal_vector, rotvec))
             gripper_close_distance = 20
             commands = [
                 MoveCommand(False, self.move_robot.move_to_home_gripper, speed=3),
@@ -94,6 +94,7 @@ class PickingNode:
                 MoveCommand(True, self.move_robot.close_gripper, 50),
                 MoveCommand(True, self.move_robot.movel, pose_pick, velocity=0.1, use_mm=True),
                 MoveCommand(True, self.move_robot.close_gripper, gripper_close_distance, speed=0.5, lock=True),
+                MoveCommand(False, rospy.sleep, 0.2),
                 MoveCommand(True, self.move_robot.movel2, [center[0], center[1], 100], rotvec, use_mm=True),
                 MoveCommand(True, self.move_robot.movel2, [center[0], center[1], 300], [0, np.pi, 0], use_mm=True)
             ]
