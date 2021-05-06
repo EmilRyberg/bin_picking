@@ -7,6 +7,7 @@ import numpy as np
 from bin_picking.msg import PickObjectAction, PickObjectFeedback, PickObjectResult, PickObjectGoal
 from cv_bridge import CvBridge
 from bin_picking_lib.move_robot.move_robot_moveit import MoveRobotMoveIt
+from bin_picking_lib.aruco import Calibration
 from vision_lib.ros_camera_interface import ROSCamera
 from testing_resources.find_objects import FindObjects, ObjectInfo
 
@@ -32,6 +33,7 @@ class PickingNode:
         self.action_server = actionlib.SimpleActionServer("pick_object", PickObjectAction, self.callback, auto_start=False)
 
         self.surface_normals = SurfaceNormals()
+        self.aruco = Calibration()
         self.bridge = CvBridge()
         self.move_robot = MoveRobotMoveIt()
 
@@ -101,7 +103,9 @@ class PickingNode:
                     succeeded = False
                     break
         elif command == "place_object":
-            self.move_robot.movel2(goal.position, [0, np.pi, 0], use_mm=True)
+            reference_img = self.bridge.imgmsg_to_cv2(goal.reference_img, desired_encoding="passthrough")
+            point = self.aruco.calibrate(reference_img, goal.place_image_x, goal.place_image_y, goal.place_world_z)
+            self.move_robot.movel2(point, [0, np.pi, 0], use_mm=True)
             self.move_robot.open_gripper()
         elif command == "point_at":
             mask = self.bridge.imgmsg_to_cv2(goal.mask, desired_encoding="passthrough")
